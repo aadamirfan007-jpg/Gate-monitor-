@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AA Transports – Gate Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #131929;
+    --surface2: #1a2236;
+    --border: #1e2d47;
+    --accent: #f97316;
+    --accent-dim: rgba(249,115,22,0.12);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.1);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.1);
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 24px;
+  }
+
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── STATS ROW ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .stat-value.green { color: var(--green); }
+  .stat-value.orange { color: var(--accent); }
+
+  /* ── TRUCK LIST ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .clear-btn {
+    font-size: 12px;
+    color: var(--red);
+    background: var(--red-dim);
+    border: 1px solid rgba(239,68,68,0.2);
+    padding: 4px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .clear-btn:hover { background: rgba(239,68,68,0.2); }
+
+  .truck-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .truck-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 14px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .truck-card.inside { border-left: 3px solid var(--green); }
+  .truck-card.left { border-left: 3px solid var(--text-muted); opacity: 0.6; }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.inside { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.left { background: var(--text-muted); }
+
+  .truck-info { min-width: 0; }
+
+  .truck-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .truck-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .truck-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .truck-status.inside {
+    background: var(--green-dim);
+    color: var(--green);
+  }
+
+  .truck-status.left {
+    background: rgba(100,116,139,0.1);
+    color: var(--text-muted);
+  }
+
+  .truck-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+
+  /* ── SETUP PANEL ── */
+  .setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-group { margin-bottom: 14px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  input[type="text"], input[type="number"], input[type="range"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+
+  input[type="range"] {
+    padding: 4px 0;
+    accent-color: var(--accent);
+    border: none;
+    background: transparent;
+  }
+
+  .range-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 7px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover { background: #ea6c10; }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  .geofence-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 12px;
+  }
+
+  .geofence-status.active {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+
+  .geofence-status.inactive {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  .geofence-status.warning {
+    background: var(--yellow-dim);
+    color: var(--yellow);
+    border: 1px solid rgba(234,179,8,0.2);
+  }
+
+  /* ── DRIVER CHECK-IN PANEL ── */
+  .checkin-wrap {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .checkin-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+  }
+
+  .checkin-icon { font-size: 40px; margin-bottom: 14px; }
+
+  .checkin-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .checkin-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .checkin-result {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    display: none;
+  }
+
+  .checkin-result.success {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.2);
+    display: block;
+  }
+
+  .checkin-result.error {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.2);
+    display: block;
+  }
+
+  .checkin-result.outside {
+    background: var(--yellow-dim);
+    color: var(--yellow);
+    border: 1px solid rgba(234,179,8,0.2);
+    display: block;
+  }
+
+  /* ── LOG TABLE ── */
+  .log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .log-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .log-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .log-table tr:last-child td { border-bottom: none; }
+
+  .log-table tbody tr:hover { background: var(--surface2); }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .badge.entered { background: var(--green-dim); color: var(--green); }
+  .badge.exited { background: rgba(100,116,139,0.1); color: var(--text-muted); }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* QR section */
+  .qr-wrap {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  #qrcode canvas { display: block; }
+
+  @media (max-width: 680px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .setup-grid { grid-template-columns: 1fr; }
+    .truck-card { grid-template-columns: auto 1fr auto; }
+    .truck-time { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">AA</div>
+    AA Transports – Gate Monitor
+  </div>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    LIVE
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('dashboard')">Dashboard</div>
+  <div class="tab" onclick="switchTab('checkin')">Driver Check-In</div>
+  <div class="tab" onclick="switchTab('log')">Activity Log</div>
+  <div class="tab" onclick="switchTab('setup')">Setup</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel active" id="panel-dashboard">
+  <div class="container">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Inside Now</div>
+        <div class="stat-value green" id="stat-inside">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Arrived Today</div>
+        <div class="stat-value" id="stat-today">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Departed Today</div>
+        <div class="stat-value" id="stat-departed">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Geofence Radius</div>
+        <div class="stat-value orange" id="stat-radius">—</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Trucks on Premises</div>
+      <button class="clear-btn" onclick="clearAll()">Clear All</button>
+    </div>
+
+    <div class="truck-list" id="truck-list">
+      <div class="empty-state">
+        <div class="empty-icon">🚛</div>
+        <div class="empty-text">No trucks have checked in yet.<br>Share the <strong>Driver Check-In</strong> link with arriving trucks.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DRIVER CHECK-IN -->
+<div class="panel" id="panel-checkin">
+  <div class="container">
+    <div class="checkin-wrap">
+      <div class="checkin-card">
+        <div class="checkin-icon">📍</div>
+        <div class="checkin-title">AA Transports Gate</div>
+        <div class="checkin-sub">Enter your truck number to check in. Your location will be verified automatically.</div>
+
+        <div class="form-group" style="text-align:left">
+          <label>Truck Number</label>
+          <input type="text" id="driver-truck" placeholder="e.g. TN 33 AB 1234" style="text-transform:uppercase">
+        </div>
+
+        <div class="form-group" style="text-align:left">
+          <label>Driver Name (optional)</label>
+          <input type="text" id="driver-name" placeholder="Your name">
+        </div>
+
+        <button class="btn btn-primary" onclick="driverCheckin()">📍 Check In Now</button>
+        <button class="btn btn-secondary" onclick="driverCheckout()">🚪 Check Out</button>
+
+        <div id="checkin-result" class="checkin-result"></div>
+      </div>
+
+      <div style="margin-top:20px; text-align:center">
+        <div class="section-title" style="margin-bottom:12px">QR Code for Gate</div>
+        <div style="display:flex; justify-content:center">
+          <div class="qr-wrap">
+            <div id="qrcode"></div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:8px">Print & place at your gate. Drivers scan to open check-in.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="panel" id="panel-log">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-title">Activity Log</div>
+      <button class="clear-btn" onclick="clearLog()">Clear Log</button>
+    </div>
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Truck</th>
+            <th>Driver</th>
+            <th>Event</th>
+            <th>Time</th>
+            <th>Distance</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted)">No events yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="panel" id="panel-setup">
+  <div class="container">
+    <div class="setup-grid">
+      <div class="card">
+        <div class="card-title">Geofence Location</div>
+
+        <div class="form-group">
+          <label>Office Location</label>
+          <input type="text" id="setup-address" placeholder="Enter address or use GPS">
+        </div>
+
+        <button class="btn btn-primary" onclick="detectLocation()">📍 Use My Current Location</button>
+        <button class="btn btn-secondary" onclick="saveManualLocation()">💾 Save Address</button>
+
+        <div id="location-status" class="geofence-status inactive" style="margin-top:12px">
+          ⚠ No location set
+        </div>
+
+        <div style="margin-top:14px; font-size:12px; color:var(--text-muted)">
+          Lat: <span class="mono" id="disp-lat">—</span> &nbsp;
+          Lng: <span class="mono" id="disp-lng">—</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Geofence Radius</div>
+
+        <div class="form-group">
+          <label>Radius — how close counts as "arrived"</label>
+          <input type="range" id="radius-slider" min="50" max="1000" value="200" step="50" oninput="updateRadius(this.value)">
+          <div class="range-display" id="radius-display">200 metres</div>
+        </div>
+
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6; margin-top:8px">
+          <strong style="color:var(--text-dim)">50–100m</strong> — tight, only triggers when inside your compound<br>
+          <strong style="color:var(--text-dim)">200–300m</strong> — recommended for most offices<br>
+          <strong style="color:var(--text-dim)">500m+</strong> — good for highway-side depots
+        </div>
+
+        <div class="form-group" style="margin-top:16px">
+          <label>Auto Check-Out After (minutes)</label>
+          <input type="number" id="auto-checkout" value="480" min="30" max="1440" placeholder="480">
+        </div>
+
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px" class="card">
+      <div class="card-title">How It Works</div>
+      <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; font-size:13px; color:var(--text-muted); line-height:1.6">
+        <div>
+          <div style="color:var(--accent); font-weight:600; margin-bottom:4px">1. Set your location</div>
+          Use "My Current Location" while at your office to pin the geofence centre.
+        </div>
+        <div>
+          <div style="color:var(--accent); font-weight:600; margin-bottom:4px">2. Driver checks in</div>
+          Driver opens the Check-In page (or scans the QR), enters truck number, taps Check In.
+        </div>
+        <div>
+          <div style="color:var(--accent); font-weight:600; margin-bottom:4px">3. Location verified</div>
+          If the driver's GPS is within your radius, they're marked as Inside. Otherwise rejected.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR LIB -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+// ── STATE ──
+let settings = JSON.parse(localStorage.getItem('aa_settings') || '{}');
+let trucks = JSON.parse(localStorage.getItem('aa_trucks') || '[]');
+let eventLog = JSON.parse(localStorage.getItem('aa_log') || '[]');
+
+// defaults
+if (!settings.radius) settings.radius = 200;
+if (!settings.autoCheckout) settings.autoCheckout = 480;
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const tabs = ['dashboard','checkin','log','setup'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'log') renderLog();
+  if (name === 'setup') renderSetup();
+}
+
+// ── SETUP ──
+function detectLocation() {
+  const btn = event.target;
+  btn.textContent = '⏳ Detecting…';
+  btn.disabled = true;
+
+  if (!navigator.geolocation) {
+    alert('Geolocation not supported by this browser.');
+    btn.textContent = '📍 Use My Current Location';
+    btn.disabled = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    settings.lat = pos.coords.latitude;
+    settings.lng = pos.coords.longitude;
+    settings.accuracy = pos.coords.accuracy;
+    saveSettingsData();
+    renderSetup();
+    btn.textContent = '📍 Use My Current Location';
+    btn.disabled = false;
+  }, err => {
+    alert('Could not get location: ' + err.message + '\nMake sure location permission is allowed.');
+    btn.textContent = '📍 Use My Current Location';
+    btn.disabled = false;
+  }, { enableHighAccuracy: true, timeout: 15000 });
+}
+
+function saveManualLocation() {
+  const addr = document.getElementById('setup-address').value.trim();
+  if (!addr) { alert('Enter an address first.'); return; }
+  // For demo, just store address. In production, geocode via Google Maps API.
+  settings.address = addr;
+  alert('Address saved. For precise geofencing, use "My Current Location" while at your office.');
+  saveSettingsData();
+}
+
+function updateRadius(val) {
+  document.getElementById('radius-display').textContent = val + ' metres';
+  document.getElementById('stat-radius').textContent = val + 'm';
+}
+
+function saveSettings() {
+  settings.radius = parseInt(document.getElementById('radius-slider').value);
+  settings.autoCheckout = parseInt(document.getElementById('auto-checkout').value);
+  saveSettingsData();
+  alert('Settings saved!');
+  renderDashboard();
+}
+
+function saveSettingsData() {
+  localStorage.setItem('aa_settings', JSON.stringify(settings));
+}
+
+function renderSetup() {
+  const slider = document.getElementById('radius-slider');
+  if (slider) {
+    slider.value = settings.radius || 200;
+    document.getElementById('radius-display').textContent = (settings.radius || 200) + ' metres';
+    document.getElementById('auto-checkout').value = settings.autoCheckout || 480;
+  }
+
+  const locStatus = document.getElementById('location-status');
+  const dispLat = document.getElementById('disp-lat');
+  const dispLng = document.getElementById('disp-lng');
+
+  if (settings.lat && settings.lng) {
+    locStatus.className = 'geofence-status active';
+    locStatus.textContent = '✓ Location set (±' + Math.round(settings.accuracy || 0) + 'm accuracy)';
+    dispLat.textContent = settings.lat.toFixed(6);
+    dispLng.textContent = settings.lng.toFixed(6);
+  } else {
+    locStatus.className = 'geofence-status inactive';
+    locStatus.textContent = '⚠ No location set';
+    dispLat.textContent = '—';
+    dispLng.textContent = '—';
+  }
+}
+
+// ── GEOFENCE MATH ──
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── DRIVER CHECK-IN ──
+function driverCheckin() {
+  const truckRaw = document.getElementById('driver-truck').value.trim().toUpperCase();
+  const driverName = document.getElementById('driver-name').value.trim() || 'Unknown';
+  const result = document.getElementById('checkin-result');
+
+  if (!truckRaw) {
+    showResult(result, 'error', '⚠ Please enter your truck number.');
+    return;
+  }
+
+  if (!settings.lat || !settings.lng) {
+    showResult(result, 'error', '⚠ Geofence not set up yet. Ask your admin to configure the office location.');
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    showResult(result, 'error', '⚠ Your browser does not support GPS location.');
+    return;
+  }
+
+  showResult(result, 'outside', '⏳ Getting your location…');
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const dist = haversineDistance(settings.lat, settings.lng, pos.coords.latitude, pos.coords.longitude);
+    const radius = settings.radius || 200;
+
+    if (dist <= radius) {
+      // Check if already inside
+      const existing = trucks.find(t => t.number === truckRaw && t.status === 'inside');
+      if (existing) {
+        showResult(result, 'outside', '⚠ ' + truckRaw + ' is already checked in.');
+        return;
+      }
+
+      const entry = {
+        id: Date.now(),
+        number: truckRaw,
+        driver: driverName,
+        status: 'inside',
+        arrivedAt: new Date().toISOString(),
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        dist: Math.round(dist)
+      };
+
+      trucks.unshift(entry);
+      addLog(truckRaw, driverName, 'entered', Math.round(dist));
+      saveTrucks();
+      showResult(result, 'success', '✅ ' + truckRaw + ' checked in! You are ' + Math.round(dist) + 'm from gate. Welcome!');
+    } else {
+      showResult(result, 'outside', '📍 You are ' + Math.round(dist) + 'm away — must be within ' + radius + 'm to check in. Please reach the premises first.');
+    }
+  }, err => {
+    showResult(result, 'error', '⚠ Location error: ' + err.message);
+  }, { enableHighAccuracy: true, timeout: 15000 });
+}
+
+function driverCheckout() {
+  const truckRaw = document.getElementById('driver-truck').value.trim().toUpperCase();
+  const result = document.getElementById('checkin-result');
+
+  if (!truckRaw) {
+    showResult(result, 'error', '⚠ Enter your truck number to check out.');
+    return;
+  }
+
+  const idx = trucks.findIndex(t => t.number === truckRaw && t.status === 'inside');
+  if (idx === -1) {
+    showResult(result, 'error', '⚠ ' + truckRaw + ' is not currently checked in.');
+    return;
+  }
+
+  trucks[idx].status = 'left';
+  trucks[idx].leftAt = new Date().toISOString();
+  addLog(truckRaw, trucks[idx].driver, 'exited', trucks[idx].dist);
+  saveTrucks();
+  showResult(result, 'success', '👋 ' + truckRaw + ' checked out. Safe travels!');
+}
+
+function showResult(el, type, msg) {
+  el.className = 'checkin-result ' + type;
+  el.textContent = msg;
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const inside = trucks.filter(t => t.status === 'inside');
+  const departed = trucks.filter(t => t.status === 'left' && isToday(t.arrivedAt));
+  const today = trucks.filter(t => isToday(t.arrivedAt));
+
+  document.getElementById('stat-inside').textContent = inside.length;
+  document.getElementById('stat-today').textContent = today.length;
+  document.getElementById('stat-departed').textContent = departed.length;
+  document.getElementById('stat-radius').textContent = (settings.radius || '—') + (settings.radius ? 'm' : '');
+
+  const list = document.getElementById('truck-list');
+
+  // Show inside first, then left
+  const sorted = [...inside, ...trucks.filter(t => t.status === 'left' && isToday(t.arrivedAt))];
+
+  if (sorted.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🚛</div>
+      <div class="empty-text">No trucks have checked in yet.<br>Share the <strong>Driver Check-In</strong> tab with arriving drivers.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = sorted.map(t => {
+    const arrived = formatTime(t.arrivedAt);
+    const duration = t.status === 'inside' ? elapsed(t.arrivedAt) : '';
+    const leftTime = t.leftAt ? '· Left ' + formatTime(t.leftAt) : '';
+    return `<div class="truck-card ${t.status}">
+      <div class="status-dot ${t.status}"></div>
+      <div class="truck-info">
+        <div class="truck-number">${t.number}</div>
+        <div class="truck-meta">${t.driver} · ${t.dist}m from gate ${t.status === 'inside' ? '· ' + duration : leftTime}</div>
+      </div>
+      <div class="truck-status ${t.status}">${t.status === 'inside' ? 'Inside' : 'Left'}</div>
+      <div class="truck-time">Arrived<br>${arrived}</div>
+    </div>`;
+  }).join('');
+
+  // auto-refresh inside cards
+  setTimeout(renderDashboard, 30000);
+}
+
+// ── LOG ──
+function addLog(truck, driver, event, dist) {
+  eventLog.unshift({ truck, driver, event, dist, time: new Date().toISOString() });
+  if (eventLog.length > 200) eventLog = eventLog.slice(0, 200);
+  localStorage.setItem('aa_log', JSON.stringify(eventLog));
+}
+
+function renderLog() {
+  const tbody = document.getElementById('log-body');
+  if (eventLog.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted)">No events yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = eventLog.map(e => `
+    <tr>
+      <td class="mono">${e.truck}</td>
+      <td>${e.driver}</td>
+      <td><span class="badge ${e.event}">${e.event === 'entered' ? '↓ Entered' : '↑ Exited'}</span></td>
+      <td class="mono">${formatDateTime(e.time)}</td>
+      <td>${e.dist}m</td>
+    </tr>`).join('');
+}
+
+function clearLog() {
+  if (confirm('Clear all activity logs?')) {
+    eventLog = [];
+    localStorage.setItem('aa_log', JSON.stringify(eventLog));
+    renderLog();
+  }
+}
+
+// ── UTILS ──
+function saveTrucks() {
+  localStorage.setItem('aa_trucks', JSON.stringify(trucks));
+  renderDashboard();
+}
+
+function clearAll() {
+  if (confirm('Mark all trucks as departed?')) {
+    trucks.forEach(t => { if (t.status === 'inside') { t.status = 'left'; t.leftAt = new Date().toISOString(); } });
+    saveTrucks();
+  }
+}
+
+function isToday(iso) {
+  const d = new Date(iso), n = new Date();
+  return d.getDate() === n.getDate() && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+}
+
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+function elapsed(iso) {
+  const ms = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+}
+
+// ── QR CODE ──
+function generateQR() {
+  const url = window.location.href.split('#')[0] + '#checkin';
+  new QRCode(document.getElementById('qrcode'), {
+    text: url,
+    width: 160,
+    height: 160,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// ── INIT ──
+renderDashboard();
+renderSetup();
+generateQR();
+
+// handle QR deep link
+if (location.hash === '#checkin') switchTab('checkin');
+</script>
+</body>
+</html>
